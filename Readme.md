@@ -57,7 +57,7 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
       cd ml-embedded-evaluation-kit/
       rm -rf ./dependencies
       python3 ./download_dependencies.py
-      ./build_default.py
+      ./build_default.py --npu-config-name ethos-u55-64
       #go out ml-embedded-evaluation-kit folder and copy person detection resource to ML embedded evaluation kit
       cd ..
       cp -r ./resources/img_person_detect ./ml-embedded-evaluation-kit/resources
@@ -173,3 +173,9 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
         ```
     - Run inference with vela macs=64 or not
       - You should make sure your `ml-embedded-evaluation-kit/source/use_case/img_class/usecase.cmake` is use the vela model is macs 64 or 128 model at line 50.
+      - Your building command while using deault macs 64 model will be
+        ```
+          cmake ../ -DUSE_CASE_BUILD=img_class \-DETHOS_U_NPU_ENABLED=ON \-DETHOS_U_NPU_CONFIG_ID=H64
+
+          make -j4
+          ``` 
