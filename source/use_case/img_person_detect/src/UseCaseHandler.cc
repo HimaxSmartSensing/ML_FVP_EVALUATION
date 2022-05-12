@@ -24,6 +24,7 @@
 
 #include <inttypes.h>
 /////////////////////////
+//#include "ImageUtils.hpp"
 /* Helper macro to convert RGB888 to RGB565 format. */
 #define RGB888_TO_RGB565(R8,G8,B8)  ((((R8>>3) & 0x1F) << 11) |     \
                                      (((G8>>2) & 0x3F) << 5)  |     \
@@ -53,7 +54,8 @@ namespace app {
     * @return          true if tensor is loaded, false otherwise.
     **/
     static bool LoadImageIntoTensor(uint32_t imIdx, TfLiteTensor* inputTensor);
-
+    static bool LoadRGBTOGREYImageIntoTensor(uint32_t imIdx, TfLiteTensor* inputTensor);
+    void RgbToGrayscale(const uint8_t* srcPtr, uint8_t* dstPtr, const size_t dstImgSz);
     /**
      * @brief           Helper function to increment current image index.
      * @param[in,out]   ctx   Pointer to the application context object.
@@ -131,11 +133,10 @@ namespace app {
             std::string str_inf{"Running inference... "};
 
             /* Copy over the data. */
-            LoadImageIntoTensor(ctx.Get<uint32_t>("imgIndex"), inputTensor);
-
+            LoadRGBTOGREYImageIntoTensor(ctx.Get<uint32_t>("imgIndex"), inputTensor);
             /* Display this image on the LCD. */
             platform.data_psn->present_data_image(
-                (uint8_t*) inputTensor->data.data,
+                (uint8_t*) inputTensor->data.uint8,
                 nCols, nRows, nChannels,
                 dataPsnImgStartX, dataPsnImgStartY, dataPsnImgDownscaleFactor);
 
@@ -171,23 +172,21 @@ namespace app {
             int8_t no_person_score = output->data.int8[0];
             info("person_score: %d no_person_score: %d\n",person_score,no_person_score);
            
-            uint8_t rgb_img[96*96*3]={0};
+            uint8_t grey_img[96*96]={0};
             const uint8_t* image = get_img_array(ctx.Get<uint32_t>("imgIndex"));
-            for(int i=0;i<96*96*3;i++)
-            {
-                rgb_img[i]=image[i/3];
-            }
-
+            RgbToGrayscale(image,grey_img,96*96);
              //////////////////////////////////////////////
-              platform.data_psn->present_data_image((uint8_t*)rgb_img,
-                96, 96, 3,
+              platform.data_psn->present_data_image(
+                (uint8_t*) grey_img,
+                nCols, nRows, nChannels,
                 dataPsnImgStartX, dataPsnImgStartY, dataPsnImgDownscaleFactor);
+            
 
 #if VERIFY_TEST_OUTPUT
             arm::app::DumpTensor(outputTensor);
 #endif /* VERIFY_TEST_OUTPUT */
 
-            if (!PresentInferenceResult(platform, results)) {
+            if (!PresentInferenceResult(platform,results)) {
                 return false;
             }
 
@@ -216,7 +215,37 @@ namespace app {
         debug("Image %" PRIu32 " loaded\n", imIdx);
         return true;
     }
-
+    void RgbToGrayscale(const uint8_t* srcPtr, uint8_t* dstPtr, const size_t dstImgSz)
+    {
+        const float R = 0.299;
+        const float G = 0.587;
+        const float B = 0.114;
+        for (size_t i = 0; i < dstImgSz; ++i, srcPtr += 3) {
+            uint32_t  int_gray = R * (*srcPtr) +
+                                 G * (*(srcPtr + 1)) +
+                                 B * (*(srcPtr + 2));
+            *dstPtr++ = int_gray <= std::numeric_limits<uint8_t>::max() ?
+                        int_gray : std::numeric_limits<uint8_t>::max();
+        }
+    }
+    static bool LoadRGBTOGREYImageIntoTensor(uint32_t imIdx, TfLiteTensor* inputTensor)
+    {
+        const size_t copySz = inputTensor->bytes < IMAGE_DATA_SIZE ?
+                              inputTensor->bytes : IMAGE_DATA_SIZE;
+        const uint8_t* imgSrc = get_img_array(imIdx);
+        if (nullptr == imgSrc) {
+            printf_err("Failed to get image index %" PRIu32 " (max: %u)\n", imIdx,
+                       NUMBER_OF_FILES - 1);
+            return false;
+        }
+        info("inputTensor->dims: %d\n",inputTensor->dims->size );
+        info("inputTensor->bytes: %d\n",inputTensor->bytes);
+        info("IMAGE_DATA_SIZE: %d\n",copySz);
+        //memcpy(inputTensor->data.data, imgSrc, copySz);
+        RgbToGrayscale(imgSrc, inputTensor->data.uint8, copySz);
+        debug("Image %" PRIu32 " loaded\n", imIdx);
+        return true;
+    }
     static void IncrementAppCtxImageIdx(ApplicationContext& ctx)
     {
         auto curImIdx = ctx.Get<uint32_t>("imgIndex");

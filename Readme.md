@@ -53,7 +53,10 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
       - We use Arm ML embedded evaluation kit to run the Person detection FVP example.
       ```
       # Fetch Arm ML embedded evaluation kit
-      git clone https://git.mlplatform.org/ml/ethos-u/ml-embedded-evaluation-kit.git
+      wget https://review.mlplatform.org/plugins/gitiles/ml/ethos-u/ml-embedded-evaluation-kit/+archive/refs/tags/22.02.tar.gz
+
+      mkdir ml-embedded-evaluation-kit
+      tar -C ml-embedded-evaluation-kit  -xvzf 22.02.tar.gz
       cd ml-embedded-evaluation-kit/
       rm -rf ./dependencies
       python3 ./download_dependencies.py
@@ -62,7 +65,6 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
       cd ..
       cp -r ./resources/img_person_detect ./ml-embedded-evaluation-kit/resources
       cp -r ./source/use_case/img_person_detect ./ml-embedded-evaluation-kit/source/use_case
-      cp -r gen_grey_cpp.py ./ml-embedded-evaluation-kit/scripts/py/
       cp -r ./vela/img_person_detect ./ml-embedded-evaluation-kit/resources_downloaded/
       ```
 
@@ -71,16 +73,11 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
     ```
     cd ml-embedded-evaluation-kit
     ```
-  - First, you should edit the cmake script, ./scripts/cmake/source_gen_utils.cmake, at the line 32. To make it run with gen_grey_cpp.py to auto convert the grey image to .cc file. 
-    ```
-    #COMMAND ${PYTHON} ${SCRIPTS_DIR}/py/gen_rgb_cpp.py
-    COMMAND ${PYTHON} ${SCRIPTS_DIR}/py/gen_grey_cpp.py
-    ```
-  - Second, Create the output file and go under the folder
+  - First, Create the output file and go under the folder
     ```
     mkdir build_img_person_detect && cd build_img_person_detect
     ```
-  - Third, Configure the person detection example and set ETHOS_U_NPU_ENABLED to be OFF.And you can run only with Cortex-M55.
+  - Second, Configure the person detection example and set ETHOS_U_NPU_ENABLED to be OFF.And you can run only with Cortex-M55.
     ```
     cmake ../ -DUSE_CASE_BUILD=img_person_detect \-DETHOS_U_NPU_ENABLED=OFF
     ```
@@ -124,17 +121,12 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
     ```
     cd ml-embedded-evaluation-kit
     ```
-  - First, you should edit the cmake script, ./scripts/cmake/source_gen_utils.cmake, at the line 32. To make it run with gen_grey_cpp.py to auto convert the grey image to .cc file. 
-    ```
-    #COMMAND ${PYTHON} ${SCRIPTS_DIR}/py/gen_rgb_cpp.py
-    COMMAND ${PYTHON} ${SCRIPTS_DIR}/py/gen_grey_cpp.py
-    ```
-  - Second, Create the output file and go under the folder
+  - First, Create the output file and go under the folder
     ```
     mkdir build_img_person_detect_npu && cd build_img_person_detect_npu
     ```
 
-  - Third, Configure the person detection example and set ETHOS_U_NPU_ENABLED to be ON.And you can run with Cortex-M55 and Ethos-U55 NPU.
+  - Second, Configure the person detection example and set ETHOS_U_NPU_ENABLED to be ON.And you can run with Cortex-M55 and Ethos-U55 NPU.
     ```
     cmake ../ -DUSE_CASE_BUILD=img_person_detect \-DETHOS_U_NPU_ENABLED=ON
     ```
@@ -165,12 +157,6 @@ To run evaluations using this software, we suggest using Ubuntu 20.04 LTS enviro
   - Add more test image
     - You can add more test image under the file address `ml-embedded-evaluation-kit/resources/img_person_detect/samples`. Configure and compile the person detection example again to test more image.
   - If you want to run the example about the mobilenet image classfication example.
-    - Build example with RGB input images. 
-      - You should make sure the line 32 and 33 at ./scripts/cmake/source_gen_utils.cmake is run with gen_rgb_cpp.py to auto convert the rgb image to .cc file. 
-        ```
-        COMMAND ${PYTHON} ${SCRIPTS_DIR}/py/gen_rgb_cpp.py
-        #COMMAND ${PYTHON} ${SCRIPTS_DIR}/py/gen_grey_cpp.py
-        ```
     - Run inference with vela macs=64 or not
       - You should make sure your `ml-embedded-evaluation-kit/source/use_case/img_class/usecase.cmake` is use the vela model is macs 64 or 128 model at line 50.
       - Your building command while using deault macs 64 model will be
