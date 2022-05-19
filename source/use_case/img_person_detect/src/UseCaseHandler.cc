@@ -23,8 +23,6 @@
 #include "hal.h"
 
 #include <inttypes.h>
-/////////////////////////
-//#include "ImageUtils.hpp"
 /* Helper macro to convert RGB888 to RGB565 format. */
 #define RGB888_TO_RGB565(R8,G8,B8)  ((((R8>>3) & 0x1F) << 11) |     \
                                      (((G8>>2) & 0x3F) << 5)  |     \
@@ -33,17 +31,11 @@
 constexpr uint16_t COLOR_BLACK  = 0;
 constexpr uint16_t COLOR_GREEN  = RGB888_TO_RGB565(  0, 255,  0); // 2016;
 constexpr uint16_t COLOR_YELLOW = RGB888_TO_RGB565(255, 255,  0); // 65504;
-//////////////////////
 
 using ImgClassClassifier = arm::app::Classifier;
 
 namespace arm {
 namespace app {
-
-
-/////////////////////////////////////
-
-///////////////////////////////////////////////////////////////
 
     /**
     * @brief           Helper function to load the current image into the input
@@ -54,7 +46,21 @@ namespace app {
     * @return          true if tensor is loaded, false otherwise.
     **/
     static bool LoadImageIntoTensor(uint32_t imIdx, TfLiteTensor* inputTensor);
+    /**
+    * @brief           Helper function to convert the current RGB image to Gray image 
+    *                  and load the Gray image into the input tensor.
+    * @param[in]       imIdx         Image index (from the pool of images available
+    *                                to the application).
+    * @param[out]      inputTensor   Pointer to the input tensor to be populated.
+    * @return          true if tensor is loaded, false otherwise.
+    **/
     static bool LoadRGBTOGREYImageIntoTensor(uint32_t imIdx, TfLiteTensor* inputTensor);
+    /**
+    * @brief           Helper function to convert the current RGB image to Gray image.
+    * @param[in]       srcPtr        Pointer to the input RGB image.
+    * @param[in]       dstImgSz      Output image size
+    * @param[out]      dstPtr        Pointer to the Output Gray image.
+    **/
     void RgbToGrayscale(const uint8_t* srcPtr, uint8_t* dstPtr, const size_t dstImgSz);
     /**
      * @brief           Helper function to increment current image index.
@@ -111,7 +117,6 @@ namespace app {
         TfLiteTensor* output=nullptr;
         output = model.GetOutputTensor(0);
         TfLiteTensor* inputTensor = model.GetInputTensor(0);
-        ///////////////////////
         if (!inputTensor->dims) {
             printf_err("Invalid input tensor dims\n");
             return false;
@@ -144,10 +149,6 @@ namespace app {
             if (model.IsDataSigned()) {
                 ConvertImgToInt8(inputTensor->data.data, inputTensor->bytes);
             }
-            info("input :size[%d]\n",inputTensor->bytes);
-            /*for(int i = 0;i<inputTensor->bytes;i++)
-                printf("%d,",inputTensor->data.int8[i]);
-            */
             printf("\n"); 
             /* Display message on the LCD - inference running. */
             platform.data_psn->present_data_text(str_inf.c_str(), str_inf.size(),
@@ -175,8 +176,7 @@ namespace app {
             uint8_t grey_img[96*96]={0};
             const uint8_t* image = get_img_array(ctx.Get<uint32_t>("imgIndex"));
             RgbToGrayscale(image,grey_img,96*96);
-             //////////////////////////////////////////////
-              platform.data_psn->present_data_image(
+            platform.data_psn->present_data_image(
                 (uint8_t*) grey_img,
                 nCols, nRows, nChannels,
                 dataPsnImgStartX, dataPsnImgStartY, dataPsnImgDownscaleFactor);
@@ -241,7 +241,6 @@ namespace app {
         info("inputTensor->dims: %d\n",inputTensor->dims->size );
         info("inputTensor->bytes: %d\n",inputTensor->bytes);
         info("IMAGE_DATA_SIZE: %d\n",copySz);
-        //memcpy(inputTensor->data.data, imgSrc, copySz);
         RgbToGrayscale(imgSrc, inputTensor->data.uint8, copySz);
         debug("Image %" PRIu32 " loaded\n", imIdx);
         return true;
